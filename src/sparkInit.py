@@ -7,7 +7,8 @@ def start_spark() -> SparkSession:
     ) \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
-        .master("local[*]")
+        .master("local[*]") \
+        .appName("task6")
 
     spark_session = builder.getOrCreate()
     return spark_session
