@@ -23,11 +23,14 @@ class Silver(Delta):
 
     @staticmethod
     def process(spark: SparkSession) -> None:
-        # instantiating delta object
         # Reading the data
         df_clients = Silver.read_dataframes(Writer.CLIENTS.format("bronze"), Schema.CLIENTS, spark)
         # Inserting the columns
         df_clients_ok = Silver.filter_data(df_clients)
+        # Checking if clients has new data
+        if Silver.check_empty(df_clients_ok):
+            print("no clients to process")
+            return
         # Filtering clients without income because we can't analyse users without income
         df_clients_right = df_clients_ok.where(f.col("income") != -1)
         df_clients_wrong = df_clients_ok.where(f.col("income") == -1)
@@ -38,6 +41,6 @@ class Silver(Delta):
                                Condition.CLIENTS)
         # Upsert bronze
         Silver.upsert(Writer.CLIENTS.format("bronze"), df_clients_right, spark,
-                             Condition.CLIENTS)
+                      Condition.CLIENTS)
         Silver.upsert(Writer.CLIENTS.format("bronze"), df_clients_wrong, spark,
-                             Condition.CLIENTS)
+                      Condition.CLIENTS)
