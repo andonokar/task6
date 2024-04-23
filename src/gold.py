@@ -1,5 +1,6 @@
 # Importing required dependencies
 from typing import Union
+from src.exceptions import DeltaReadingError
 from src.tables import Delta
 from src.utils import Schema, Writer, Condition
 from pyspark.sql import types as t, functions as f
@@ -10,7 +11,10 @@ from pyspark.sql import DataFrame, SparkSession
 class Gold(Delta):
     @staticmethod
     def read_dataframes(path: str, schema: Union[t.StructType, str], spark: SparkSession) -> DataFrame:
-        return spark.read.format("delta").load(path)
+        try:
+            return spark.read.format("delta").load(path)
+        except Exception as err:
+            raise DeltaReadingError(err)
 
     @staticmethod
     def calculate_total_price(transaction: DataFrame, products: DataFrame) -> DataFrame:
@@ -50,7 +54,7 @@ class Gold(Delta):
         join_df = df_agg.join(df_clients, on="Client_ID", how="inner")
         return join_df.withColumn(
             "checkDebts",
-            f.when(f.col("totalPrice") > f.col("income"), True).otherwise(False)) \
+            f.when(f.col("totalPrice") > f.col("Income"), True).otherwise(False)) \
             .withColumn("dateCalculated", f.current_date())
 
     @staticmethod
