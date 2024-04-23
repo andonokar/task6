@@ -18,6 +18,7 @@ class Delta(ABC):
         :param schema: schema of the data
         :param spark: a spark session
         :return: dataframe with the schema provided
+        :raises ReadingError: If the path could not be read
         """
         ...
 
