@@ -1,5 +1,6 @@
 # Importing required dependencies
 from typing import Union
+from src.exceptions import CsvReadingError
 from src.tables import Delta
 from src.utils import Reader, Schema, Writer, Condition
 from pyspark.sql import types as t, functions as f
@@ -10,7 +11,10 @@ from pyspark.sql import DataFrame, SparkSession
 class Bronze(Delta):
     @staticmethod
     def read_dataframes(path: str, schema: Union[t.StructType, str], spark: SparkSession) -> DataFrame:
-        return spark.read.format("csv").option("header", "true").schema(schema).load(path)
+        try:
+            return spark.read.format("csv").option("header", "true").schema(schema).load(path)
+        except Exception as err:
+            raise CsvReadingError(err)
 
     @staticmethod
     def insert_columns(df: DataFrame) -> DataFrame:
