@@ -1,11 +1,10 @@
 # Importing required dependencies
 from typing import Union
-import delta
 from src.tables import Delta
 from src.utils import Schema, Writer, Condition
 from pyspark.sql import types as t, functions as f
 from pyspark.sql import DataFrame, SparkSession
-from src.sparkInit import start_spark
+
 
 # Defining bronze class
 class Gold(Delta):
@@ -57,9 +56,13 @@ class Gold(Delta):
     @staticmethod
     def process(spark: SparkSession) -> None:
         # Reading the data
+        df_transactions = Gold.read_dataframes(Writer.PRODUCTS.format("bronze"), Schema.TRANSACTIONS, spark)
+        # Checking if transactions has new data
+        if Gold.check_empty(df_transactions):
+            print("no transactions to process")
+            return
         df_clients = Gold.read_dataframes(Writer.CLIENTS.format("silver"), Schema.CLIENTS, spark)
         df_products = Gold.read_dataframes(Writer.TRANSACTIONS.format("bronze"), Schema.PRODUCTS, spark)
-        df_transactions = Gold.read_dataframes(Writer.PRODUCTS.format("bronze"), Schema.TRANSACTIONS, spark)
         # Calculating total price per transaction
         df_total_price = Gold.calculate_total_price(df_transactions, df_products)
         # Calculating total price per user
@@ -67,7 +70,5 @@ class Gold(Delta):
         final_df = Gold.append_client_info_and_result(df_agg, df_clients)
         # Saving table
         Gold.save_into_delta(Writer.FINAL, final_df, spark, overwrite=True)
-        # Upserting transactions because we only need to reprocess in case of new transactions
-
-
-Gold.process(start_spark())
+        # Upsert transactions because we only need to reprocess in case of new transactions
+        Gold.upsert(Writer.TRANSACTIONS.format("bronze"), df_transactions, spark, Condition.TRANSACTIONS)
