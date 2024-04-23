@@ -2,6 +2,7 @@
 from typing import Union
 from src.tables import Delta
 from src.utils import Schema, Writer, Condition
+from src.exceptions import DeltaReadingError
 from pyspark.sql import types as t, functions as f
 from pyspark.sql import DataFrame, SparkSession
 
@@ -10,7 +11,10 @@ from pyspark.sql import DataFrame, SparkSession
 class Silver(Delta):
     @staticmethod
     def read_dataframes(path: str, schema: Union[t.StructType, str], spark: SparkSession) -> DataFrame:
-        return spark.read.format("delta").load(path)
+        try:
+            return spark.read.format("delta").load(path)
+        except Exception as err:
+            raise DeltaReadingError(err)
 
     @staticmethod
     def filter_data(df: DataFrame) -> DataFrame:
