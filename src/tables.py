@@ -23,12 +23,14 @@ class Delta(ABC):
 
     # Defining function to save/upsert tables
     @staticmethod
-    def save_into_delta(path: str, df: DataFrame, spark: SparkSession, condition: Optional[str] = None) -> None:
+    def save_into_delta(path: str, df: DataFrame, spark: SparkSession, condition: Optional[str] = None,
+                        overwrite: bool = False) -> None:
         """
         Saves dataframe into delta table
         :param path: path of the table
         :param df: dataframe to be used
         :param spark: the sparkSession
+        :param overwrite: if the table should be rewritten every time
         :param condition: condition that determines if upsert or appends, fill with s and t
         :return: None
 
@@ -36,7 +38,7 @@ class Delta(ABC):
 
             Delta.save_into_delta("/path/to/table", df, spark, "s.id = t.id")
         """
-        if not DeltaTable.isDeltaTable(spark, path):
+        if not DeltaTable.isDeltaTable(spark, path) or overwrite:
             df.write.format("delta").mode("overwrite").save(path)
             return
         if condition:
@@ -57,3 +59,20 @@ class Delta(ABC):
         :return: None
         """
         ...
+
+    @staticmethod
+    def upsert(path: str, df: DataFrame, spark: SparkSession, condition: str) -> None:
+        """
+        upsert to set processed as true
+        :param df: data
+        :param path: the delta table bronze path
+        :param spark: spark session to operate the delta table
+        :param condition: the condition to match, use s and t as source and target
+        :return: None
+
+        Example::
+
+            Delta.upsert_bronze("/path/to/table", df, spark, "s.id = t.id")
+        """
+        DeltaTable.forPath(spark, path).alias("s").merge(df, condition) \
+            .whenMatchedUpdate(set={"processed": "true"})

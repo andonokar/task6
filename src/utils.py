@@ -31,3 +31,10 @@ class Writer:
     CLIENTS = "data/{}/clients"
     PRODUCTS = "data/{}/products"
     TRANSACTIONS = "data/{}/transactions"
+    FINAL = "data/gold/final"
+
+class Condition:
+    CLIENTS = "s.Client_ID = t.Client_ID"
+    PRODUCTS = "s.Product_ID = t.Product_ID"
+    TRANSACTIONS = ("s.Client_ID = t.Client_ID and s.Product_ID = t.Product_ID and "
+                    "s.Amount = t.Amount and s.Timestamp = t.Timestamp")

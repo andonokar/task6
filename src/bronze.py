@@ -1,7 +1,7 @@
 # Importing required dependencies
 from typing import Union
 from src.tables import Delta
-from src.utils import Reader, Schema, Writer
+from src.utils import Reader, Schema, Writer, Condition
 from pyspark.sql import types as t, functions as f
 from pyspark.sql import DataFrame, SparkSession
 
@@ -24,7 +24,6 @@ class Bronze(Delta):
 
     @staticmethod
     def process(spark: SparkSession) -> None:
-        # instantiating delta object
         # Reading the data
         df_clients = Bronze.read_dataframes(Reader.CLIENTS, Schema.CLIENTS, spark)
         df_products = Bronze.read_dataframes(Reader.PRODUCTS, Schema.PRODUCTS, spark)
@@ -35,7 +34,8 @@ class Bronze(Delta):
         df_transactions = Bronze.insert_columns(df_transactions)
         # Saving the databases
         Bronze.save_into_delta(Writer.CLIENTS.format("bronze"), df_clients, spark,
-                               "s.Client_ID = t.Client_ID")
-        Bronze.save_into_delta(Writer.TRANSACTIONS.format("bronze"), df_transactions, spark)
+                               Condition.CLIENTS)
+        Bronze.save_into_delta(Writer.TRANSACTIONS.format("bronze"), df_transactions, spark,
+                               Condition.TRANSACTIONS)
         Bronze.save_into_delta(Writer.PRODUCTS.format("bronze"), df_products, spark,
-                               "s.Product_ID = t.Product_ID")
+                               Condition.PRODUCTS)
