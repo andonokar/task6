@@ -33,6 +33,7 @@ class Writer:
     TRANSACTIONS = "data/{}/transactions"
     FINAL = "data/gold/final"
 
+
 class Condition:
     CLIENTS = "s.Client_ID = t.Client_ID"
     PRODUCTS = "s.Product_ID = t.Product_ID"
