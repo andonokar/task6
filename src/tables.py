@@ -5,6 +5,8 @@ from pyspark.sql import DataFrame, SparkSession
 from delta import DeltaTable
 from typing import Optional
 
+from src.exceptions import DeltaWritingError, DeltaUpsertError
+
 
 # Abstract class
 class Delta(ABC):
@@ -34,22 +36,32 @@ class Delta(ABC):
         :param overwrite: if the table should be rewritten every time
         :param condition: condition that determines if upsert or appends, fill with s and t
         :return: None
+        :raises Union[DeltaWritingError, DeltaUpsertError]: When creation or upsert fails
 
         Example::
 
             Delta.save_into_delta("/path/to/table", df, spark, "s.id = t.id")
         """
         if not DeltaTable.isDeltaTable(spark, path) or overwrite:
-            df.write.format("delta").mode("overwrite").save(path)
+            try:
+                df.write.format("delta").mode("overwrite").save(path)
+            except Exception as err:
+                raise DeltaWritingError(err)
             return
         if condition:
-            DeltaTable.forPath(spark, path).alias("s") \
-                .merge(df.alias("t"), condition) \
-                .whenMatchedUpdateAll() \
-                .whenNotMatchedInsertAll() \
-                .execute()
+            try:
+                DeltaTable.forPath(spark, path).alias("s") \
+                    .merge(df.alias("t"), condition) \
+                    .whenMatchedUpdateAll() \
+                    .whenNotMatchedInsertAll() \
+                    .execute()
+            except Exception as err:
+                raise DeltaUpsertError(err)
             return
-        df.write.format("delta").mode("append").save(path)
+        try:
+            df.write.format("delta").mode("append").save(path)
+        except Exception as err:
+            raise DeltaWritingError(err)
 
     # Function that process the tables
     @staticmethod
@@ -69,14 +81,18 @@ class Delta(ABC):
         :param path: the delta table bronze path
         :param spark: spark session to operate the delta table
         :param condition: the condition to match, use s and t as source and target
+        :raises DeltaUpsertError: when condition not match, duplicates or missing processed column
         :return: None
 
         Example::
 
             Delta.upsert_bronze("/path/to/table", df, spark, "s.id = t.id")
         """
-        DeltaTable.forPath(spark, path).alias("s").merge(df.alias("t"), condition) \
-            .whenMatchedUpdate(set={"processed": "true"}).execute()
+        try:
+            DeltaTable.forPath(spark, path).alias("s").merge(df.alias("t"), condition) \
+                .whenMatchedUpdate(set={"processed": "true"}).execute()
+        except Exception as err:
+            raise DeltaUpsertError(err)
 
     @staticmethod
     def check_empty(df: DataFrame) -> bool:
