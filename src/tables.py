@@ -74,10 +74,9 @@ class Delta(ABC):
 
             Delta.upsert_bronze("/path/to/table", df, spark, "s.id = t.id")
         """
-        DeltaTable.forPath(spark, path).alias("s").merge(df, condition) \
-            .whenMatchedUpdate(set={"processed": "true"})
+        DeltaTable.forPath(spark, path).alias("s").merge(df.alias("t"), condition) \
+            .whenMatchedUpdate(set={"processed": "true"}).execute()
 
     @staticmethod
     def check_empty(df: DataFrame) -> bool:
-        return df.where("processed = false").isEmpty()
-
+        return df.isEmpty()
