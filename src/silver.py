@@ -19,7 +19,7 @@ class Silver(Delta):
         :param df: dataframe to be saved
         :return: dataframe with columns created
         """
-        return df.where(f.col("processed") == False).drop("processed", "creation_date")
+        return df.where(f.col("processed") == False)
 
     @staticmethod
     def process(spark: SparkSession) -> None:
@@ -31,6 +31,7 @@ class Silver(Delta):
         if Silver.check_empty(df_clients_ok):
             print("no clients to process")
             return
+        df_clients_ok = df_clients_ok.drop("processed", "creation_date")
         # Filtering clients without income because we can't analyse users without income
         df_clients_right = df_clients_ok.where(f.col("income") != -1)
         df_clients_wrong = df_clients_ok.where(f.col("income") == -1)
