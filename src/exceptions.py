@@ -8,3 +8,11 @@ class CsvReadingError(ReadingError):
 
 class DeltaReadingError(ReadingError):
     pass
+
+
+class DeltaWritingError(Exception):
+    pass
+
+
+class DeltaUpsertError(Exception):
+    pass
