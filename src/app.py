@@ -9,6 +9,7 @@ def main():
     Bronze.process(spark)
     Silver.process(spark)
     Gold.process(spark)
+    spark.stop()
 
 
 if __name__ == "__main__":
