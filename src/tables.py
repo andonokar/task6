@@ -76,3 +76,8 @@ class Delta(ABC):
         """
         DeltaTable.forPath(spark, path).alias("s").merge(df, condition) \
             .whenMatchedUpdate(set={"processed": "true"})
+
+    @staticmethod
+    def check_empty(df: DataFrame) -> bool:
+        return df.where("processed = false").isEmpty()
+
